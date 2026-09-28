@@ -1,0 +1,21 @@
+# Рабочие данные каждого сотрудника остаются только на его компьютере.
+/data/
+/backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.zip
+
+# Локальное окружение и настройки.
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.env
+.env.*
+*.log
+.DS_Store
+.idea/
+/build/
+/dist/
