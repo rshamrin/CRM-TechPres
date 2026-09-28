@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BI‑аналитика — Mini‑CRM</title>
+  <link rel="stylesheet" href="/static/app.css?v=0.4"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Mini‑CRM</div>
+    <div class="top-actions">
+      <a class="link" href="/">Сделки</a>
+      <a class="link" href="/activity">Активность</a>
+      <a class="link" href="/report">Отчёт</a>
+      <a class="link active-link" href="/analytics">BI‑аналитика</a>
+      <a class="link" href="/backup" title="Сделать копию базы">Бэкап</a>
+    </div>
+  </div>
+
+  <main class="analytics-page">
+    <div class="analytics-title-row">
+      <div>
+        <h1>BI‑аналитика активностей</h1>
+        <p class="muted">Считай события по любому комментарию, смотри динамику и вклад каждого sales.</p>
+      </div>
+      <div class="analytics-status" id="analyticsStatus">Готово к расчёту</div>
+    </div>
+
+    <section class="card bi-filter-card">
+      <div class="bi-quick-ranges" aria-label="Быстрый выбор периода">
+        <span class="small">Быстрый период:</span>
+        <button class="bi-chip" type="button" data-range="30">30 дней</button>
+        <button class="bi-chip" type="button" data-range="90">90 дней</button>
+        <button class="bi-chip" type="button" data-range="ytd">С начала года</button>
+        <button class="bi-chip" type="button" data-range="all">Весь период</button>
+      </div>
+
+      <form id="analyticsFilters">
+        <div class="bi-filter-grid">
+          <label class="bi-field">
+            <span>Дата с</span>
+            <input id="biDateFrom" type="date" value="{{ default_from }}" required/>
+          </label>
+          <label class="bi-field">
+            <span>Дата по</span>
+            <input id="biDateTo" type="date" value="{{ default_to }}" required/>
+          </label>
+          <label class="bi-field bi-field-wide">
+            <span>Комментарий</span>
+            <input id="biComment" list="commentSuggestions" value="Первая встреча, показ системы" placeholder="Например: показ системы"/>
+            <datalist id="commentSuggestions"></datalist>
+          </label>
+          <label class="bi-field">
+            <span>Как искать</span>
+            <select id="biMatchMode">
+              <option value="exact" selected>Точное совпадение</option>
+              <option value="contains">Содержит фразу</option>
+            </select>
+          </label>
+          <label class="bi-field">
+            <span>Тип события</span>
+            <select id="biEventType">
+              <option value="">Все типы</option>
+              {% for item in event_types %}
+                <option value="{{ item.value }}">{{ item.label }} ({{ item.count }})</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="bi-field">
+            <span>Sales</span>
+            <select id="biSales">
+              <option value="">Все sales</option>
+              {% for item in sales_options %}
+                <option value="{{ item.value }}">{{ item.label }} ({{ item.count }})</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label class="bi-field">
+            <span>Детализация</span>
+            <select id="biGranularity">
+              <option value="day">По дням</option>
+              <option value="week">По неделям</option>
+              <option value="month" selected>По месяцам</option>
+              <option value="quarter">По кварталам</option>
+              <option value="year">По годам</option>
+            </select>
+          </label>
+          <div class="bi-filter-actions">
+            <button class="btn" id="clearCommentBtn" type="button">Все комментарии</button>
+            <button class="btn primary" type="submit">Обновить аналитику</button>
+          </div>
+        </div>
+      </form>
+
+      <div class="small">В расчёт входят события активных и архивных сделок. Sales определяется по текущему значению в карточке сделки.</div>
+
+      <div class="bi-popular-wrap">
+        <span class="small">Частые комментарии за выбранный период:</span>
+        <div class="bi-popular" id="popularComments"><span class="small">загрузка…</span></div>
+      </div>
+      <div class="bi-error" id="analyticsError" hidden></div>
+      <div class="bi-warning" id="dataQualityWarning" hidden></div>
+    </section>
+
+    <section class="bi-kpis" aria-label="Ключевые показатели">
+      <article class="card bi-kpi">
+        <div class="bi-kpi-label">Совпадений</div>
+        <div class="bi-kpi-value" id="kpiEvents">—</div>
+        <div class="bi-kpi-note" id="kpiEventsNote">событий</div>
+      </article>
+      <article class="card bi-kpi">
+        <div class="bi-kpi-label">Уникальных сделок</div>
+        <div class="bi-kpi-value" id="kpiClients">—</div>
+        <div class="bi-kpi-note">клиентов / процессов</div>
+      </article>
+      <article class="card bi-kpi">
+        <div class="bi-kpi-label">Sales с активностью</div>
+        <div class="bi-kpi-value" id="kpiSales">—</div>
+        <div class="bi-kpi-note">по выбранному условию</div>
+      </article>
+      <article class="card bi-kpi">
+        <div class="bi-kpi-label">Доля активностей</div>
+        <div class="bi-kpi-value" id="kpiShare">—</div>
+        <div class="bi-kpi-note" id="kpiShareNote">от событий периода</div>
+      </article>
+      <article class="card bi-kpi">
+        <div class="bi-kpi-label">К прошлому периоду</div>
+        <div class="bi-kpi-value" id="kpiChange">—</div>
+        <div class="bi-kpi-note" id="kpiChangeNote">равный по длине период</div>
+      </article>
+    </section>
+
+    <section class="card bi-panel">
+      <div class="bi-panel-head">
+        <div>
+          <h2>Динамика</h2>
+          <div class="small" id="chartSubtitle">Количество совпадений по периодам</div>
+        </div>
+      </div>
+      <div class="bi-chart" id="periodChart"><div class="empty">Загрузка…</div></div>
+    </section>
+
+    <section class="card bi-panel">
+      <div class="bi-panel-head">
+        <div>
+          <h2>Детализация по периодам и sales</h2>
+          <div class="small">Нулевые периоды сохранены — провалы видны сразу.</div>
+        </div>
+      </div>
+      <div class="bi-table-wrap">
+        <table class="table bi-table">
+          <thead><tr id="periodTableHead"></tr></thead>
+          <tbody id="periodTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="bi-two-columns">
+      <section class="card bi-panel">
+        <div class="bi-panel-head"><h2>По sales</h2></div>
+        <div class="bi-table-wrap">
+          <table class="table bi-table">
+            <thead><tr><th>Sales</th><th>События</th><th>Сделки</th><th>Доля</th><th>Последнее</th></tr></thead>
+            <tbody id="salesTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card bi-panel">
+        <div class="bi-panel-head"><h2>По типам событий</h2></div>
+        <div class="bi-table-wrap">
+          <table class="table bi-table">
+            <thead><tr><th>Тип</th><th>События</th><th>Сделки</th></tr></thead>
+            <tbody id="eventTypeTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <section class="card bi-panel">
+      <div class="bi-panel-head">
+        <div>
+          <h2>Расшифровка событий</h2>
+          <div class="small" id="detailsSubtitle">Все найденные строки</div>
+        </div>
+        <button class="btn" id="downloadAnalyticsCsv" type="button">Скачать CSV</button>
+      </div>
+      <div class="bi-table-wrap bi-details-wrap">
+        <table class="table bi-table">
+          <thead><tr><th>Дата</th><th>Sales</th><th>Сделка</th><th>Тип</th><th>Комментарий</th></tr></thead>
+          <tbody id="detailsTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/analytics.js?v=0.4"></script>
+</body>
+</html>

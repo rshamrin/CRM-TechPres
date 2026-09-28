@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Активность — Mini-CRM</title>
+  <link rel="stylesheet" href="/static/app.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Mini‑CRM</div>
+    <div class="top-actions">
+      <a class="link" href="/clearmail">Календарь</a>
+      <a class="link" href="/">Сделки</a>
+      <a class="link" href="/report">Отчёт</a>
+      <a class="link" href="/analytics">BI‑аналитика</a>
+      <a class="link" href="/backup">Бэкап</a>
+    </div>
+  </div>
+
+  <div class="page">
+    <h1>Активность</h1>
+
+    <div class="grid3">
+      <section class="card">
+        <h2>Без контакта 7+ дней</h2>
+        {% if no_contact_7|length == 0 %}
+          <div class="muted">Пусто 🎉</div>
+        {% else %}
+          <ul class="list">
+          {% for c in no_contact_7 %}
+            <li>
+              <a href="/#client={{ c.id }}">{{ c.name }}</a>
+              <span class="pill">{{ c.status_name }}</span>
+              <span class="muted">— {{ c.days }} дн.</span>
+            </li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>Без следующего шага</h2>
+        {% if no_next_step|length == 0 %}
+          <div class="muted">Пусто 🎉</div>
+        {% else %}
+          <ul class="list">
+          {% for c in no_next_step %}
+            <li>
+              <a href="/#client={{ c.id }}">{{ c.name }}</a>
+              <span class="pill">{{ c.status_name }}</span>
+            </li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+
+      <section class="card">
+        <h2>Просрочен дедлайн</h2>
+        {% if overdue_next|length == 0 %}
+          <div class="muted">Пусто 🎉</div>
+        {% else %}
+          <ul class="list">
+          {% for c in overdue_next %}
+            <li>
+              <a href="/#client={{ c.id }}">{{ c.name }}</a>
+              <span class="pill">{{ c.status_name }}</span>
+              <span class="muted">— due {{ c.due }}</span>
+            </li>
+          {% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+    </div>
+
+    <div class="hint" style="margin-top:16px;">
+      Подсказка: клики из списка ведут на главную страницу и открывают карточку (через якорь #client=ID).
+    </div>
+  </div>
+</body>
+</html>

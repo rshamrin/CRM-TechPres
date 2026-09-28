@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Отчёт — Mini‑CRM</title>
+  <link rel="stylesheet" href="/static/app.css?v=0.4"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Mini‑CRM</div>
+    <div class="top-actions">
+      <a class="link" href="/">Сделки</a>
+      <a class="link" href="/activity">Активность</a>
+      <a class="link" href="/analytics">BI‑аналитика</a>
+      <a class="link" href="/backup" title="Сделать копию базы">Бэкап</a>
+    </div>
+  </div>
+
+  <div class="report-wrap">
+    <div class="report-controls card">
+      <div class="row">
+        <div class="label">Период активности (дней)</div>
+        <input id="reportDays" type="number" min="1" max="365" value="14" class="input small"/>
+        <button class="btn primary" id="buildReportBtn" type="button">Сформировать</button>
+        <button class="btn" id="copyReportBtn" type="button" title="Скопировать HTML-отчёт в буфер обмена (для вставки в Outlook)">Скопировать в письмо</button>
+        <button class="btn" id="downloadReportBtn" type="button">Скачать HTML</button>
+      </div>
+      <div class="hint" id="reportMeta">В отчёт попадут сделки, по которым была активность за выбранный период. Порядок внутри разделов будет взят из сортировки на главной странице.</div>
+    </div>
+
+    <div class="card report-preview">
+      <div class="report-preview-head">
+        <div class="section-title">Предпросмотр</div>
+      </div>
+      <div id="reportPreview" class="report-preview-body">
+        <div class="empty">Нажми «Сформировать» 👆</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/report.js?v=0.4"></script>
+</body>
+</html>

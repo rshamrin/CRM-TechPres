@@ -1,0 +1,67 @@
+<div style="font-family: -apple-system, Segoe UI, Arial, sans-serif; font-size: 14px; color: #111;">
+  <div style="font-size:18px; font-weight:700; margin: 0 0 8px 0;">
+    Статус сделок {{ date_from }} – {{ date_to }}
+  </div>
+  <div style="margin: 0 0 14px 0; color:#444;">
+    Включены сделки, по которым была активность за последние <strong>{{ days }}</strong> дней.
+    Сортировка внутри разделов: <strong>{{ sort_summary }}</strong>.
+  </div>
+
+  {% if groups|length == 0 %}
+    <div style="padding: 12px; background:#f5f5f5; border:1px solid #e5e5e5; border-radius:10px;">
+      Нет сделок с активностью за выбранный период.
+    </div>
+  {% endif %}
+
+  {% macro table_block(clients) -%}
+  <table cellpadding="0" cellspacing="0" border="0" style="width:100%; border-collapse: collapse; margin-bottom: 10px;">
+    <thead>
+      <tr>
+        <th align="left" style="border:1px solid #dcdcdc; background:#f3f3f3; padding:8px; font-size:13px;">Клиент</th>
+        <th align="left" style="border:1px solid #dcdcdc; background:#f3f3f3; padding:8px; font-size:13px;">Sales</th>
+        <th align="left" style="border:1px solid #dcdcdc; background:#f3f3f3; padding:8px; font-size:13px;">Статус</th>
+        <th align="left" style="border:1px solid #dcdcdc; background:#f3f3f3; padding:8px; font-size:13px;">Хронология (последние 5)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clients %}
+      <tr>
+        <td style="border:1px solid #dcdcdc; padding:8px; vertical-align: top;">{{ c.name }}</td>
+        <td style="border:1px solid #dcdcdc; padding:8px; vertical-align: top;">{{ c.sales }}</td>
+        <td style="border:1px solid #dcdcdc; padding:8px; vertical-align: top;">{{ c.status }}</td>
+        <td style="border:1px solid #dcdcdc; padding:8px; vertical-align: top; line-height: 1.35;">
+          {% if c.events|length == 0 %}
+            <span style="color:#777;">—</span>
+          {% endif %}
+          {% for e in c.events %}
+            <div style="margin: 0 0 4px 0;">
+              {% if e.recent %}
+                <strong>{{ e.date_ru }}</strong>
+              {% else %}
+                {{ e.date_ru }}
+              {% endif %}
+              — {{ e.type }}{% if e.text %}: {{ e.text }}{% endif %}
+            </div>
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {%- endmacro %}
+
+  {% for g in groups %}
+    <div style="margin: 18px 0 8px 0; font-weight: 700;">{{ loop.index }}. {{ g.name }}</div>
+
+    {% if g.active|length > 0 %}
+      {{ table_block(g.active) }}
+    {% else %}
+      <div style="margin: 0 0 10px 0; color:#777;">Нет активных сделок</div>
+    {% endif %}
+
+    {% if g.final|length > 0 %}
+      <div style="margin: 10px 0 8px 0; font-weight: 700;">{{ loop.index }}. {{ g.name }} завершены</div>
+      {{ table_block(g.final) }}
+    {% endif %}
+  {% endfor %}
+</div>

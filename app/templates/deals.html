@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Сделки — Mini‑CRM</title>
+  <link rel="stylesheet" href="/static/app.css"/>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Mini‑CRM</div>
+    <div class="top-actions">
+
+      <button class="link" id="densityToggle" type="button" title="Переключить плотность интерфейса">Комфорт</button>
+      <button class="link" id="openAdv" type="button">Фильтр/Сортировка</button>
+      <button class="link" id="openSettings" type="button">Настройки</button>
+      <a class="link" href="/clearmail">Календарь</a>
+      <a class="link" href="/activity">Активность</a>
+      <a class="link" href="/report">Отчёт</a>
+      <a class="link" href="/analytics">BI‑аналитика</a>
+      <a class="link" href="/backup" title="Сделать копию базы">Бэкап</a>
+      <a class="link" href="/export/clients.csv" title="Выгрузить клиентов CSV">Экспорт клиентов</a>
+    </div>
+  </div>
+
+  <div class="layout">
+    <aside class="left">
+      <div class="section">
+        <div class="section-title">Статусы</div>
+        <div class="pill-list" id="statusList">
+          <button class="pill active" data-id="">Все</button>
+          {% for s in statuses %}
+            <button class="pill" data-id="{{ s.id }}">{{ s.name }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Тип сделки</div>
+        <div class="pill-list" id="dealTypeList">
+          <button class="pill active" data-id="">Все</button>
+          {% for t in deal_types %}
+            <button class="pill" data-id="{{ t.id }}">{{ t.name }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="section subtle">
+        <label class="check">
+          <input type="checkbox" id="showArchived"/>
+          <span>Показывать архив</span>
+        </label>
+      </div>
+    </aside>
+
+    <main class="center">
+      <div class="toolbar">
+        <input id="q" class="search" placeholder="Поиск: клиент, sales…" />
+        <button class="btn primary" id="newClientBtn">+ Клиент</button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="clientsTable">
+          <thead>
+            <tr>
+              <th data-sort="name">Клиент</th>
+              <th data-sort="sales">Sales</th>
+              <th data-sort="deal_type">Тип</th>
+              <th data-sort="status">Статус</th>
+              <th data-sort="last_contact">Последний контакт</th>
+              <th>Хронология (последние 5)</th>
+            </tr>
+          </thead>
+          <tbody id="clientsBody"></tbody>
+        </table>
+      </div>
+    </main>
+
+    <aside class="right" id="detailPane">
+      <div class="empty">Выбери клиента слева 👈</div>
+    </aside>
+  </div>
+
+  <!-- Диалог: новый клиент -->
+  <dialog id="dlgNewClient" class="dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <div class="dialog-title">Новый клиент</div>
+        <button class="icon" value="cancel" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="dialog-body">
+        <label>Клиент / Процесс *</label>
+        <input id="newName" required />
+
+        <label>Sales</label>
+        <select id="newSales">
+          {% for p in sales %}
+            <option value="{{ p.name }}">{{ p.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label>Тип сделки</label>
+        <select id="newDealType">
+          {% for t in deal_types %}
+            <option value="{{ t.id }}">{{ t.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label>Статус</label>
+        <select id="newStatus">
+          {% for s in statuses %}
+            <option value="{{ s.id }}">{{ s.name }}</option>
+          {% endfor %}
+        </select>
+
+        <label>Теги (через запятую)</label>
+        <input id="newTags" placeholder="гос, TM, лаборатория"/>
+
+        <label>Приоритет</label>
+        <select id="newPriority">
+          <option value="0">0</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+        </select>
+
+        <label>Заметка</label>
+        <textarea id="newNotes" rows="4" placeholder="коротко о контексте…"></textarea>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" value="cancel">Отмена</button>
+        <button class="btn primary" id="createClient" value="default">Создать</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Диалог: добавить событие -->
+  <dialog id="dlgNewEvent" class="dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <div class="dialog-title">Добавить событие</div>
+        <button class="icon" value="cancel" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="grid2">
+          <div>
+            <label>Тип</label>
+            <select id="evType">
+              <option>Звонок</option>
+              <option>Встреча</option>
+              <option>Письмо</option>
+              <option>Демо</option>
+              <option>Задача</option>
+              <option>Заметка</option>
+            </select>
+          </div>
+          <div>
+            <label>Дата</label>
+            <input id="evAt" type="date"/>
+          </div>
+        </div>
+        <label>Текст *</label>
+        <textarea id="evText" rows="7" placeholder="что обсудили, что договорились, что ждём…" required></textarea>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" value="cancel">Отмена</button>
+        <button class="btn primary" id="addEvent" value="default">Добавить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Диалог: вложения клиента или события -->
+  <dialog id="dlgAttachments" class="dialog">
+    <form method="dialog" class="dialog-card">
+      <div class="dialog-head">
+        <div>
+          <div class="dialog-title" id="attachmentDialogTitle">Вложения</div>
+          <div class="small" id="attachmentDialogSubtitle"></div>
+        </div>
+        <button class="icon" value="cancel" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="attachment-actions">
+          <button class="btn primary" type="button" id="pickAttachmentFiles">+ Файлы</button>
+          <button class="btn" type="button" id="pickAttachmentFolder">+ Папка</button>
+        </div>
+        <input id="attachmentFilesInput" type="file" multiple hidden/>
+        <input id="attachmentFolderInput" type="file" multiple webkitdirectory directory hidden/>
+        <div class="hint">При загрузке папки сохраняется её структура и все файлы внутри.</div>
+        <div id="attachmentUploadStatus" class="attachment-status" aria-live="polite"></div>
+        <div id="attachmentTargetList" class="attachment-list"></div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" value="cancel">Закрыть</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Диалог: сложные фильтры и сортировка -->
+  <dialog id="dlgAdv" class="dialog">
+    <form method="dialog" class="dialog-card wide">
+      <div class="dialog-head">
+        <div class="dialog-title">Фильтры и сортировка</div>
+        <button class="icon" value="cancel" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="adv-grid">
+          <section class="adv-block">
+            <div class="adv-title">Фильтры (AND)</div>
+            <div id="filtersBox" class="adv-list"></div>
+            <button class="btn" type="button" id="addFilterRow">+ Условие</button>
+          </section>
+
+          <section class="adv-block">
+            <div class="adv-title">Сортировка (уровни)</div>
+            <div id="sortsBox" class="adv-list"></div>
+            <button class="btn" type="button" id="addSortRow">+ Уровень</button>
+          </section>
+
+          <section class="adv-block">
+            <div class="adv-title">Sales</div>
+            <div id="settingsSales" class="settings-list"></div>
+            <div class="settings-add">
+              <input id="slNewName" placeholder="Новый sales"/>
+              <button class="btn primary" type="button" id="slAddBtn">Добавить</button>
+            </div>
+          </section>
+
+        </div>
+        <div class="hint">Сохраняется автоматически для этого браузера.</div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" type="button" id="resetAdv">Сбросить</button>
+        <div class="spacer"></div>
+        <button class="btn" value="cancel">Закрыть</button>
+        <button class="btn primary" id="applyAdv" value="default">Применить</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Диалог: настройки (статусы + типы сделок) -->
+  <dialog id="dlgSettings" class="dialog">
+    <form method="dialog" class="dialog-card wide">
+      <div class="dialog-head">
+        <div class="dialog-title">Настройки</div>
+        <button class="icon" value="cancel" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="dialog-body">
+        <div class="adv-grid">
+          <section class="adv-block">
+            <div class="adv-title">Статусы</div>
+            <div id="settingsStatuses" class="settings-list"></div>
+            <div class="settings-add">
+              <input id="stNewName" placeholder="Новый статус"/>
+              <input id="stNewOrder" type="number" placeholder="Порядок" value="100"/>
+              <label class="check tiny"><input id="stNewFinal" type="checkbox"/><span>Финальный</span></label>
+              <button class="btn primary" type="button" id="stAddBtn">Добавить</button>
+            </div>
+          </section>
+
+          <section class="adv-block">
+            <div class="adv-title">Типы сделок</div>
+            <div id="settingsTypes" class="settings-list"></div>
+            <div class="settings-add">
+              <input id="tpNewName" placeholder="Новый тип"/>
+              <input id="tpNewOrder" type="number" placeholder="Порядок" value="100"/>
+              <button class="btn primary" type="button" id="tpAddBtn">Добавить</button>
+            </div>
+          </section>
+        </div>
+        <div class="hint">Удаление — жёсткое. Если статус/тип уже используется клиентами, система не даст удалить.</div>
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" value="cancel">Закрыть</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script>
+    window.__STATUSES__ = {{ statuses|tojson }};
+    window.__DEAL_TYPES__ = {{ deal_types|tojson }};
+    window.__SALES__ = {{ sales|tojson }};
+  </script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
