@@ -19,3 +19,5 @@ __pycache__/
 .idea/
 /build/
 /dist/
+.crm_revision
+.crm_revision.new
