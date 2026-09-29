@@ -49,8 +49,9 @@ git push origin main
 
 ## Запуск (вариант 1 — одной кнопкой)
 1) Скачай ZIP из репозитория и распакуй в постоянную папку
-2) На macOS открой `run.command`, на Windows — `run.bat`
-3) Открой в браузере: http://127.0.0.1:8000
+2) На MacOS Открой терминал и введи xattr -d com.apple.quarantine /путь/к/run.command
+3) На macOS открой `run.command`, на Windows — `run.bat`
+4) Открой в браузере: http://127.0.0.1:8000
 
 Если macOS спросит про безопасность — разреши запуск (System Settings → Privacy & Security).
 
